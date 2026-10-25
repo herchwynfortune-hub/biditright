@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useGameState } from "@/lib/game/useGameState";
 import { useGameChannel } from "@/lib/game/useGameChannel";
+import UpgradeModal from "@/components/UpgradeModal";
 import {
   TEAM_COLORS,
   TEAM_NAME_POOL,
@@ -22,19 +23,21 @@ export default function HostGame({
   statements,
   initialTeams,
   initialPlayers,
+  teacherPlan,
 }: {
   initialGame: Game;
   set: GameSet;
   statements: Statement[];
   initialTeams: Team[];
   initialPlayers: Player[];
+  teacherPlan: "free" | "pro";
 }) {
   const { game, teams, players } = useGameState(initialGame.id, initialGame, initialTeams, initialPlayers);
 
   const currentStatement = statements[game.current_statement_index] ?? null;
 
   if (game.status === "lobby") {
-    return <LobbyView game={game} set={set} teams={teams} players={players} />;
+    return <LobbyView game={game} set={set} teams={teams} players={players} teacherPlan={teacherPlan} />;
   }
 
   if (game.status === "ended") {
@@ -54,14 +57,27 @@ export default function HostGame({
 
 // ---------- Lobby ----------
 
-function LobbyView({ game, set, teams, players }: { game: Game; set: GameSet; teams: Team[]; players: Player[] }) {
+function LobbyView({
+  game,
+  set,
+  teams,
+  players,
+  teacherPlan,
+}: {
+  game: Game;
+  set: GameSet;
+  teams: Team[];
+  players: Player[];
+  teacherPlan: "free" | "pro";
+}) {
   const supabase = createClient();
   const [mode, setMode] = useState(game.mode);
   const [timer, setTimer] = useState(game.timer_seconds);
   const [doubleRound, setDoubleRound] = useState(game.double_round);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const maxTeams = 4; // Free tier; Pro raises this to 10 in phase 2.
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const maxTeams = teacherPlan === "pro" ? 10 : 4;
 
   async function syncSettings(patch: Partial<Pick<Game, "mode" | "timer_seconds" | "double_round">>) {
     await supabase.from("games").update(patch).eq("id", game.id);
@@ -70,7 +86,10 @@ function LobbyView({ game, set, teams, players }: { game: Game; set: GameSet; te
   async function addTeam() {
     // Name/color are assigned atomically on the server to avoid a race when
     // this is clicked twice quickly (two inserts reading the same local count).
-    await supabase.rpc("add_team", { p_game_id: game.id });
+    const { error } = await supabase.rpc("add_team", { p_game_id: game.id });
+    if (error?.message.includes("FREE_PLAN_TEAM_LIMIT")) {
+      setShowUpgrade(true);
+    }
   }
 
   async function removeTeam(teamId: string) {
@@ -221,14 +240,23 @@ function LobbyView({ game, set, teams, players }: { game: Game; set: GameSet; te
                 </button>
               </div>
             ))}
-            {teams.length < maxTeams && (
-              <button onClick={addTeam} className="btn btn-secondary py-2.5 text-sm">
-                + Add team
-              </button>
-            )}
+            <button
+              onClick={() => (teams.length >= maxTeams ? setShowUpgrade(true) : addTeam())}
+              className="btn btn-secondary py-2.5 text-sm"
+            >
+              + Add team
+            </button>
           </div>
         </div>
       </div>
+
+      {showUpgrade && (
+        <UpgradeModal
+          title={`You've reached ${maxTeams} teams`}
+          message="Upgrade to Pro to host games with up to 10 teams."
+          onClose={() => setShowUpgrade(false)}
+        />
+      )}
     </div>
   );
 }
