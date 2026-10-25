@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import UpgradeModal from "@/components/UpgradeModal";
 import type { GameSet, Statement } from "@/lib/game/types";
 
 const ERROR_TAGS = ["tense", "article", "agreement", "form", "fact", "other"];
@@ -21,6 +22,8 @@ export default function SetEditor({
   const [statements, setStatements] = useState<Statement[]>(initialStatements);
   const [hosting, startHosting] = useTransition();
   const [hostError, setHostError] = useState<string | null>(null);
+  const [cloning, startCloning] = useTransition();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   function update(id: string, patch: Partial<Statement>) {
     setStatements((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -88,6 +91,21 @@ export default function SetEditor({
     });
   }
 
+  function cloneSet() {
+    startCloning(async () => {
+      const { data, error } = await supabase.rpc("clone_set", { p_set_id: set.id });
+      if (error) {
+        if (error.message.includes("FREE_PLAN_CLONE_LIMIT")) {
+          setShowUpgrade(true);
+        } else {
+          setHostError(error.message);
+        }
+        return;
+      }
+      router.push(`/sets/${data.id}`);
+    });
+  }
+
   const correctCount = statements.filter((s) => s.is_correct).length;
   const canHost = statements.length >= 8 && statements.length <= 15;
 
@@ -102,9 +120,16 @@ export default function SetEditor({
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <button onClick={hostSet} disabled={hosting || !canHost} className="btn btn-primary px-5 py-2.5 disabled:opacity-50">
-            {hosting ? "Starting…" : "Host this set"}
-          </button>
+          <div className="flex gap-2">
+            {!isOwner && (
+              <button onClick={cloneSet} disabled={cloning} className="btn btn-secondary px-5 py-2.5 disabled:opacity-50">
+                {cloning ? "Duplicating…" : "✨ Duplicate & customize"}
+              </button>
+            )}
+            <button onClick={hostSet} disabled={hosting || !canHost} className="btn btn-primary px-5 py-2.5 disabled:opacity-50">
+              {hosting ? "Starting…" : "Host this set"}
+            </button>
+          </div>
           {!canHost && <span className="text-xs text-ink-muted">Needs 8–15 statements</span>}
           {hostError && <span className="text-xs text-incorrect">{hostError}</span>}
         </div>
@@ -223,6 +248,14 @@ export default function SetEditor({
         <button onClick={addStatement} className="btn btn-secondary self-start px-5 py-2.5">
           + Add statement
         </button>
+      )}
+
+      {showUpgrade && (
+        <UpgradeModal
+          title="Duplicate & customize is a Pro feature"
+          message="Upgrade to Pro to duplicate any premade set into your own library and edit it freely."
+          onClose={() => setShowUpgrade(false)}
+        />
       )}
     </div>
   );

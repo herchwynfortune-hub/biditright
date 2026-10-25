@@ -54,6 +54,25 @@ export type Player = {
   joined_at: string;
 };
 
+export type PremadeSetSummary = {
+  id: string;
+  title: string;
+  subject: string;
+  level: string | null;
+  pack_id: string | null;
+  statement_count: number;
+};
+
+export type SetSummary = {
+  id: string;
+  title: string;
+  subject: string;
+  level: string | null;
+  is_premade: boolean;
+  pack_id: string | null;
+  owner_id: string | null;
+};
+
 export type BidStatus = {
   id: string;
   game_id: string;

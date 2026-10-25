@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SetEditor from "./SetEditor";
+import type { SetSummary } from "@/lib/game/types";
 
 export default async function SetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,7 +14,38 @@ export default async function SetPage({ params }: { params: Promise<{ id: string
   if (!user) redirect("/login");
 
   const { data: set } = await supabase.from("sets").select("*").eq("id", id).single();
-  if (!set) notFound();
+
+  if (!set) {
+    // Either the set truly doesn't exist, or RLS hid it because it's a
+    // Pro-only premade set this teacher can't read. get_set_summary() is
+    // safe to call either way — it returns metadata only, no statements.
+    const { data: summary } = (await supabase.rpc("get_set_summary", { p_set_id: id }).maybeSingle()) as {
+      data: SetSummary | null;
+    };
+    if (!summary) notFound();
+
+    return (
+      <div className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
+        <div className="card p-8 text-center">
+          <span className="mb-3 inline-block rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+            Pro
+          </span>
+          <h1 className="mb-2 text-xl font-bold">{summary.title}</h1>
+          <p className="mb-6 text-sm text-ink-muted">
+            This set is part of the full Pro premade library. Upgrade to Pro to play it with your class.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button disabled className="btn btn-primary py-2.5 text-sm opacity-60">
+              Upgrade to Pro — pricing coming soon
+            </button>
+            <Link href="/library" className="btn btn-secondary py-2.5 text-sm">
+              Back to my sets
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { data: statements } = await supabase
     .from("statements")
