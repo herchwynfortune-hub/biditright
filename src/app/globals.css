@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-bg: #eef4f2;
+  --color-card: #ffffff;
+  --color-ink: #10201f;
+  --color-ink-muted: #5c6b69;
+  --color-border: #dbe5e2;
+
+  --color-gold: #ffc531;
+  --color-orange: #ff7a2f;
+  --color-teal-deep: #0d5c58;
+
+  --color-team-blue: #2556d9;
+  --color-team-orange: #ff7a2f;
+  --color-team-teal: #0b7a5c;
+  --color-team-purple: #8e3bb5;
+
+  --color-correct: #0b7a5c;
+  --color-incorrect: #d9402a;
+
+  --radius-card: 20px;
+  --radius-control: 14px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: var(--color-bg);
+  --color-card: var(--color-card);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-border: var(--color-border);
+  --color-gold: var(--color-gold);
+  --color-orange: var(--color-orange);
+  --color-teal-deep: var(--color-teal-deep);
+  --color-team-blue: var(--color-team-blue);
+  --color-team-orange: var(--color-team-orange);
+  --color-team-teal: var(--color-team-teal);
+  --color-team-purple: var(--color-team-purple);
+  --color-correct: var(--color-correct);
+  --color-incorrect: var(--color-incorrect);
+  --font-sans: var(--font-dm-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px rgba(16, 32, 31, 0.08);
+}
+
+.btn {
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn-primary {
+  background: var(--color-orange);
+  color: #ffffff;
+}
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+.btn-secondary {
+  background: var(--color-card);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary:hover {
+  background: #f5f8f7;
 }
