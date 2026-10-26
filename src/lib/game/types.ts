@@ -30,6 +30,7 @@ export type Game = {
   current_statement_index: number;
   timer_seconds: number;
   double_round: boolean;
+  theme: string;
   started_at: string | null;
   ended_at: string | null;
 };

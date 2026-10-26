@@ -110,6 +110,19 @@ export default function SetEditor({
     });
   }
 
+  const [exporting, setExporting] = useState(false);
+
+  async function exportPdf() {
+    if (teacherPlan !== "pro") {
+      setShowUpgrade("pdf");
+      return;
+    }
+    setExporting(true);
+    const { exportSetToPdf } = await import("@/lib/game/pdf");
+    exportSetToPdf(set, statements);
+    setExporting(false);
+  }
+
   const correctCount = statements.filter((s) => s.is_correct).length;
   const canHost = statements.length >= 8 && statements.length <= 15;
 
@@ -130,6 +143,9 @@ export default function SetEditor({
                 {cloning ? "Duplicating…" : "✨ Duplicate & customize"}
               </button>
             )}
+            <button onClick={exportPdf} disabled={exporting} className="btn btn-secondary px-5 py-2.5 disabled:opacity-50">
+              {exporting ? "Exporting…" : "📄 Export to PDF"}
+            </button>
             <button onClick={hostSet} disabled={hosting || !canHost} className="btn btn-primary px-5 py-2.5 disabled:opacity-50">
               {hosting ? "Starting…" : "Host this set"}
             </button>
@@ -274,6 +290,13 @@ export default function SetEditor({
         <UpgradeModal
           title="Homework mode is a Pro feature"
           message="Upgrade to Pro to send students a link to practice this set solo — their results feed straight into your error reports."
+          onClose={() => setShowUpgrade(null)}
+        />
+      )}
+      {showUpgrade === "pdf" && (
+        <UpgradeModal
+          title="PDF export is a Pro feature"
+          message="Upgrade to Pro to export this set as a printable worksheet with an answer key."
           onClose={() => setShowUpgrade(null)}
         />
       )}

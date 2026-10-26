@@ -22,7 +22,7 @@ export default async function HostPage({ params }: { params: Promise<{ gameId: s
     .order("position");
   const { data: teams } = await supabase.from("teams").select("*").eq("game_id", gameId);
   const { data: players } = await supabase.from("players").select("*").eq("game_id", gameId);
-  const { data: teacher } = await supabase.from("teachers").select("plan").eq("id", user.id).single();
+  const { data: teacher } = await supabase.from("teachers").select("plan, logo_url").eq("id", user.id).single();
 
   return (
     <HostGame
@@ -32,6 +32,7 @@ export default async function HostPage({ params }: { params: Promise<{ gameId: s
       initialTeams={teams ?? []}
       initialPlayers={players ?? []}
       teacherPlan={teacher?.plan ?? "free"}
+      logoUrl={teacher?.logo_url ?? null}
     />
   );
 }

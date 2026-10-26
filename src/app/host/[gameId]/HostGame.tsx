@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useGameState } from "@/lib/game/useGameState";
 import { useGameChannel } from "@/lib/game/useGameChannel";
 import UpgradeModal from "@/components/UpgradeModal";
+import ThemedScreen from "@/components/ThemedScreen";
+import { THEMES, type ThemeId } from "@/lib/game/themes";
 import {
   TEAM_COLORS,
   TEAM_NAME_POOL,
@@ -25,6 +27,7 @@ export default function HostGame({
   initialTeams,
   initialPlayers,
   teacherPlan,
+  logoUrl,
 }: {
   initialGame: Game;
   set: GameSet;
@@ -32,27 +35,39 @@ export default function HostGame({
   initialTeams: Team[];
   initialPlayers: Player[];
   teacherPlan: "free" | "pro";
+  logoUrl: string | null;
 }) {
   const { game, teams, players } = useGameState(initialGame.id, initialGame, initialTeams, initialPlayers);
 
   const currentStatement = statements[game.current_statement_index] ?? null;
 
   if (game.status === "lobby") {
-    return <LobbyView game={game} set={set} teams={teams} players={players} teacherPlan={teacherPlan} />;
+    return (
+      <ThemedScreen theme={game.theme}>
+        <LobbyView game={game} set={set} teams={teams} players={players} teacherPlan={teacherPlan} logoUrl={logoUrl} />
+      </ThemedScreen>
+    );
   }
 
   if (game.status === "ended") {
-    return <LeaderboardView game={game} set={set} teams={teams} statements={statements} teacherPlan={teacherPlan} />;
+    return (
+      <ThemedScreen theme={game.theme}>
+        <LeaderboardView game={game} set={set} teams={teams} statements={statements} teacherPlan={teacherPlan} />
+      </ThemedScreen>
+    );
   }
 
   return (
-    <ActiveHostView
-      key={currentStatement?.id ?? game.current_statement_index}
-      game={game}
-      statements={statements}
-      teams={teams}
-      currentStatement={currentStatement}
-    />
+    <ThemedScreen theme={game.theme}>
+      <ActiveHostView
+        key={currentStatement?.id ?? game.current_statement_index}
+        game={game}
+        statements={statements}
+        teams={teams}
+        currentStatement={currentStatement}
+        logoUrl={logoUrl}
+      />
+    </ThemedScreen>
   );
 }
 
@@ -64,23 +79,26 @@ function LobbyView({
   teams,
   players,
   teacherPlan,
+  logoUrl,
 }: {
   game: Game;
   set: GameSet;
   teams: Team[];
   players: Player[];
   teacherPlan: "free" | "pro";
+  logoUrl: string | null;
 }) {
   const supabase = createClient();
   const [mode, setMode] = useState(game.mode);
   const [timer, setTimer] = useState(game.timer_seconds);
   const [doubleRound, setDoubleRound] = useState(game.double_round);
+  const [theme, setTheme] = useState(game.theme);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState<"team" | "theme" | "logo" | null>(null);
   const maxTeams = teacherPlan === "pro" ? 10 : 4;
 
-  async function syncSettings(patch: Partial<Pick<Game, "mode" | "timer_seconds" | "double_round">>) {
+  async function syncSettings(patch: Partial<Pick<Game, "mode" | "timer_seconds" | "double_round" | "theme">>) {
     await supabase.from("games").update(patch).eq("id", game.id);
   }
 
@@ -89,7 +107,7 @@ function LobbyView({
     // this is clicked twice quickly (two inserts reading the same local count).
     const { error } = await supabase.rpc("add_team", { p_game_id: game.id });
     if (error?.message.includes("FREE_PLAN_TEAM_LIMIT")) {
-      setShowUpgrade(true);
+      setShowUpgrade("team");
     }
   }
 
@@ -123,7 +141,7 @@ function LobbyView({
     <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
       <div className="card mb-6 flex items-center justify-between p-5">
         <div className="flex items-center gap-2">
-          <span className="h-6 w-6 rounded-full bg-gold border-2 border-ink" />
+          <BrandMark logoUrl={logoUrl} />
           <span className="font-bold">bid it right</span>
           <span className="text-sm text-ink-muted">
             · Lobby · {set.title} · {teams.length ? `${teams.length} teams` : "no teams yet"}
@@ -218,6 +236,18 @@ function LobbyView({
               Double coins on the last statement
             </label>
           </div>
+
+          <ThemePicker
+            theme={theme}
+            teacherPlan={teacherPlan}
+            onSelect={(id) => {
+              setTheme(id);
+              syncSettings({ theme: id });
+            }}
+            onNeedsUpgrade={() => setShowUpgrade("theme")}
+          />
+
+          <LogoUploader teacherPlan={teacherPlan} initialLogoUrl={logoUrl} onNeedsUpgrade={() => setShowUpgrade("logo")} />
         </div>
 
         <div className="card p-5">
@@ -242,7 +272,7 @@ function LobbyView({
               </div>
             ))}
             <button
-              onClick={() => (teams.length >= maxTeams ? setShowUpgrade(true) : addTeam())}
+              onClick={() => (teams.length >= maxTeams ? setShowUpgrade("team") : addTeam())}
               className="btn btn-secondary py-2.5 text-sm"
             >
               + Add team
@@ -251,13 +281,144 @@ function LobbyView({
         </div>
       </div>
 
-      {showUpgrade && (
+      {showUpgrade === "team" && (
         <UpgradeModal
           title={`You've reached ${maxTeams} teams`}
           message="Upgrade to Pro to host games with up to 10 teams."
-          onClose={() => setShowUpgrade(false)}
+          onClose={() => setShowUpgrade(null)}
         />
       )}
+      {showUpgrade === "theme" && (
+        <UpgradeModal
+          title="More themes on Pro"
+          message="Upgrade to Pro to unlock every theme, plus your own logo on the host screen."
+          onClose={() => setShowUpgrade(null)}
+        />
+      )}
+      {showUpgrade === "logo" && (
+        <UpgradeModal
+          title="Custom logo is a Pro feature"
+          message="Upgrade to Pro to show your own logo on the host screen instead of the default mark."
+          onClose={() => setShowUpgrade(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ThemePicker({
+  theme,
+  teacherPlan,
+  onSelect,
+  onNeedsUpgrade,
+}: {
+  theme: string;
+  teacherPlan: "free" | "pro";
+  onSelect: (id: ThemeId) => void;
+  onNeedsUpgrade: () => void;
+}) {
+  return (
+    <div className="card p-6">
+      <h2 className="mb-3 text-lg font-bold">Theme</h2>
+      <div className="grid grid-cols-5 gap-2">
+        {THEMES.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => (t.pro && teacherPlan !== "pro" ? onNeedsUpgrade() : onSelect(t.id))}
+            className={`flex flex-col items-center gap-1.5 rounded-[var(--radius-control)] border-2 p-2 ${
+              theme === t.id ? "border-teal-deep" : "border-border"
+            }`}
+          >
+            <span className="relative flex h-8 w-8 overflow-hidden rounded-full border border-border">
+              <span className="h-full w-1/2" style={{ background: t.colors["--color-teal-deep"] }} />
+              <span className="h-full w-1/2" style={{ background: t.colors["--color-orange"] }} />
+            </span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-muted">
+              {t.label}
+              {t.pro && <span className="rounded-full bg-gold px-1 text-[9px] font-bold">PRO</span>}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BrandMark({ logoUrl }: { logoUrl: string | null }) {
+  if (logoUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={logoUrl} alt="" className="h-6 w-6 rounded-full border border-border object-cover" />;
+  }
+  return <span className="h-6 w-6 rounded-full bg-gold border-2 border-ink" />;
+}
+
+function LogoUploader({
+  teacherPlan,
+  initialLogoUrl,
+  onNeedsUpgrade,
+}: {
+  teacherPlan: "free" | "pro";
+  initialLogoUrl: string | null;
+  onNeedsUpgrade: () => void;
+}) {
+  const supabase = createClient();
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const ext = file.name.split(".").pop() ?? "png";
+    const path = `${user.id}/logo.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+    if (uploadError) {
+      setUploading(false);
+      setError(uploadError.message);
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from("logos").getPublicUrl(path);
+    const url = `${pub.publicUrl}?v=${Date.now()}`;
+    const { error: rpcError } = await supabase.rpc("set_logo_url", { p_logo_url: url });
+    if (rpcError) {
+      setUploading(false);
+      setError(rpcError.message);
+      return;
+    }
+    setLogoUrl(url);
+    setUploading(false);
+  }
+
+  return (
+    <div className="card p-6">
+      <h2 className="mb-3 text-lg font-bold">Your logo</h2>
+      <div className="flex items-center gap-4">
+        <BrandMark logoUrl={logoUrl} />
+        <label
+          className="btn btn-secondary cursor-pointer px-4 py-2 text-sm"
+          onClickCapture={(e) => {
+            if (teacherPlan !== "pro") {
+              e.preventDefault();
+              onNeedsUpgrade();
+            }
+          }}
+        >
+          {uploading ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
+          <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={uploading} />
+        </label>
+      </div>
+      {error && <p className="mt-2 text-xs text-incorrect">{error}</p>}
     </div>
   );
 }
@@ -269,11 +430,13 @@ function ActiveHostView({
   statements,
   teams,
   currentStatement,
+  logoUrl,
 }: {
   game: Game;
   statements: Statement[];
   teams: Team[];
   currentStatement: Statement | null;
+  logoUrl: string | null;
 }) {
   const supabase = createClient();
   const [secondsLeft, setSecondsLeft] = useState(game.timer_seconds);
@@ -342,7 +505,7 @@ function ActiveHostView({
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-6">
       <div className="card flex items-center justify-between p-4">
         <div className="flex items-center gap-2">
-          <span className="h-6 w-6 rounded-full bg-gold border-2 border-ink" />
+          <BrandMark logoUrl={logoUrl} />
           <span className="font-bold">bid it right</span>
           <span className="text-sm text-ink-muted">
             · Statement {game.current_statement_index + 1} of {statements.length} · Code {game.join_code}
