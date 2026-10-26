@@ -53,6 +53,14 @@ export default async function SetPage({ params }: { params: Promise<{ id: string
     .eq("set_id", id)
     .order("position");
 
+  const { data: teacher } = await supabase.from("teachers").select("plan").eq("id", user.id).single();
+  const { data: homeworkLink } = await supabase
+    .from("homework_links")
+    .select("code")
+    .eq("set_id", id)
+    .eq("teacher_id", user.id)
+    .maybeSingle();
+
   const isOwner = set.owner_id === user.id;
 
   return (
@@ -63,7 +71,13 @@ export default async function SetPage({ params }: { params: Promise<{ id: string
         </Link>
       </div>
 
-      <SetEditor set={set} initialStatements={statements ?? []} isOwner={isOwner} />
+      <SetEditor
+        set={set}
+        initialStatements={statements ?? []}
+        isOwner={isOwner}
+        teacherPlan={(teacher?.plan ?? "free") as "free" | "pro"}
+        initialHomeworkCode={homeworkLink?.code ?? null}
+      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export type Game = {
   set_id: string;
   host_id: string;
   join_code: string;
-  mode: "devices" | "one_screen";
+  mode: "devices" | "one_screen" | "homework";
   status: "lobby" | "active" | "paused" | "ended";
   current_statement_index: number;
   timer_seconds: number;
@@ -71,6 +71,16 @@ export type SetSummary = {
   is_premade: boolean;
   pack_id: string | null;
   owner_id: string | null;
+};
+
+export type ErrorReportRow = {
+  player_id: string;
+  nickname: string;
+  team_id: string;
+  team_name: string;
+  team_color: string;
+  error_tag: string;
+  tag_count: number;
 };
 
 export type BidStatus = {

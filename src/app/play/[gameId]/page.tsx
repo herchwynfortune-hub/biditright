@@ -117,20 +117,25 @@ export default function PlayPage({ params }: { params: Promise<{ gameId: string 
 
   if (game.status === "ended") {
     const ranked = [...teams].sort((a, b) => b.balance - a.balance);
+    const isHomework = game.mode === "homework";
     return (
       <div className="flex flex-1 flex-col items-center gap-4 px-6 py-12 text-center">
-        <h1 className="text-2xl font-bold">Game over</h1>
-        <p className="text-lg font-bold text-teal-deep">{ranked[0]?.name} wins!</p>
-        <div className="flex w-full max-w-xs flex-col gap-2">
-          {ranked.map((t, i) => (
-            <div key={t.id} className="flex items-center justify-between rounded-[var(--radius-control)] px-4 py-2 text-white" style={{ background: t.color }}>
-              <span>
-                #{i + 1} {t.name}
-              </span>
-              <span className="font-bold">{t.balance.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
+        <h1 className="text-2xl font-bold">{isHomework ? "Nice work!" : "Game over"}</h1>
+        <p className="text-lg font-bold text-teal-deep">
+          {isHomework ? `Final balance: ${ranked[0]?.balance.toLocaleString()} coins` : `${ranked[0]?.name} wins!`}
+        </p>
+        {!isHomework && (
+          <div className="flex w-full max-w-xs flex-col gap-2">
+            {ranked.map((t, i) => (
+              <div key={t.id} className="flex items-center justify-between rounded-[var(--radius-control)] px-4 py-2 text-white" style={{ background: t.color }}>
+                <span>
+                  #{i + 1} {t.name}
+                </span>
+                <span className="font-bold">{t.balance.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -145,13 +150,20 @@ export default function PlayPage({ params }: { params: Promise<{ gameId: string 
         </span>
         <p className="text-2xl font-bold">{revealResult.text}</p>
         {!revealResult.is_correct && revealResult.correction && <p className="font-semibold text-teal-deep">{revealResult.correction}</p>}
+        {!revealResult.is_correct && revealResult.explanation && (
+          <p className="max-w-sm text-sm text-ink-muted">{revealResult.explanation}</p>
+        )}
         {myBid && (
           <p className={`text-lg font-bold ${delta >= 0 ? "text-correct" : "text-incorrect"}`}>
             {delta >= 0 ? "+" : ""}
             {delta} coins
           </p>
         )}
-        <p className="text-sm text-ink-muted">Waiting for the teacher to continue…</p>
+        {game.mode === "homework" ? (
+          <ContinueButton gameId={gameId} onAdvanced={() => setRevealResult(null)} />
+        ) : (
+          <p className="text-sm text-ink-muted">Waiting for the teacher to continue…</p>
+        )}
       </div>
     );
   }
@@ -169,7 +181,28 @@ export default function PlayPage({ params }: { params: Promise<{ gameId: string 
       statement={currentStatement}
       statementNumber={game.current_statement_index + 1}
       total={statements.length}
+      isHomework={game.mode === "homework"}
+      onRevealed={setRevealResult}
     />
+  );
+}
+
+function ContinueButton({ gameId, onAdvanced }: { gameId: string; onAdvanced: () => void }) {
+  const supabase = createClient();
+  const [advancing, setAdvancing] = useState(false);
+
+  async function advance() {
+    setAdvancing(true);
+    const stored = localStorage.getItem(`bir_player_${gameId}`);
+    const playerToken = stored ? JSON.parse(stored).playerToken : null;
+    await supabase.rpc("advance_homework_game", { p_game_id: gameId, p_player_token: playerToken });
+    onAdvanced();
+  }
+
+  return (
+    <button onClick={advance} disabled={advancing} className="btn btn-primary px-8 py-3 text-base disabled:opacity-60">
+      {advancing ? "Loading…" : "Continue"}
+    </button>
   );
 }
 
@@ -180,6 +213,8 @@ function BidScreen({
   statement,
   statementNumber,
   total,
+  isHomework,
+  onRevealed,
 }: {
   gameId: string;
   player: Player;
@@ -187,6 +222,8 @@ function BidScreen({
   statement: Statement;
   statementNumber: number;
   total: number;
+  isHomework: boolean;
+  onRevealed: (result: RevealResult) => void;
 }) {
   const supabase = createClient();
   const [amount, setAmount] = useState(0);
@@ -216,8 +253,24 @@ function BidScreen({
       p_amount: finalAmount,
       p_player_token: playerToken,
     });
+    if (error) {
+      setSubmitting(false);
+      return;
+    }
+
+    if (isHomework) {
+      // No teacher is present to drive a solo session, so reveal immediately.
+      const { data } = await supabase.rpc("reveal_homework_statement", {
+        p_game_id: gameId,
+        p_player_token: playerToken,
+      });
+      setSubmitting(false);
+      if (data) onRevealed(data as RevealResult);
+      return;
+    }
+
     setSubmitting(false);
-    if (!error) setLocked(true);
+    setLocked(true);
   }
 
   if (locked) {

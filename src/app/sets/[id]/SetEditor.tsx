@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import UpgradeModal from "@/components/UpgradeModal";
@@ -12,10 +12,14 @@ export default function SetEditor({
   set,
   initialStatements,
   isOwner,
+  teacherPlan,
+  initialHomeworkCode,
 }: {
   set: GameSet;
   initialStatements: Statement[];
   isOwner: boolean;
+  teacherPlan: "free" | "pro";
+  initialHomeworkCode: string | null;
 }) {
   const supabase = createClient();
   const router = useRouter();
@@ -23,7 +27,7 @@ export default function SetEditor({
   const [hosting, startHosting] = useTransition();
   const [hostError, setHostError] = useState<string | null>(null);
   const [cloning, startCloning] = useTransition();
-  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState<string | null>(null);
 
   function update(id: string, patch: Partial<Statement>) {
     setStatements((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -96,7 +100,7 @@ export default function SetEditor({
       const { data, error } = await supabase.rpc("clone_set", { p_set_id: set.id });
       if (error) {
         if (error.message.includes("FREE_PLAN_CLONE_LIMIT")) {
-          setShowUpgrade(true);
+          setShowUpgrade("clone");
         } else {
           setHostError(error.message);
         }
@@ -250,12 +254,132 @@ export default function SetEditor({
         </button>
       )}
 
-      {showUpgrade && (
+      {canHost && (
+        <HomeworkCard
+          setId={set.id}
+          teacherPlan={teacherPlan}
+          initialCode={initialHomeworkCode}
+          onNeedsUpgrade={() => setShowUpgrade("homework")}
+        />
+      )}
+
+      {showUpgrade === "clone" && (
         <UpgradeModal
           title="Duplicate & customize is a Pro feature"
           message="Upgrade to Pro to duplicate any premade set into your own library and edit it freely."
-          onClose={() => setShowUpgrade(false)}
+          onClose={() => setShowUpgrade(null)}
         />
+      )}
+      {showUpgrade === "homework" && (
+        <UpgradeModal
+          title="Homework mode is a Pro feature"
+          message="Upgrade to Pro to send students a link to practice this set solo — their results feed straight into your error reports."
+          onClose={() => setShowUpgrade(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+type HomeworkAttempt = { gameId: string; nickname: string; balance: number; endedAt: string };
+
+function HomeworkCard({
+  setId,
+  teacherPlan,
+  initialCode,
+  onNeedsUpgrade,
+}: {
+  setId: string;
+  teacherPlan: "free" | "pro";
+  initialCode: string | null;
+  onNeedsUpgrade: () => void;
+}) {
+  const supabase = createClient();
+  const [code, setCode] = useState(initialCode);
+  const [creating, setCreating] = useState(false);
+  const [attempts, setAttempts] = useState<HomeworkAttempt[] | null>(null);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  useEffect(() => {
+    if (!code) return;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("games")
+        .select("id, ended_at, teams(name, balance), players(nickname)")
+        .eq("set_id", setId)
+        .eq("host_id", user.id)
+        .eq("mode", "homework")
+        .eq("status", "ended")
+        .order("ended_at", { ascending: false });
+
+      setAttempts(
+        (data ?? []).map((g) => ({
+          gameId: g.id,
+          nickname: (g.players as unknown as { nickname: string }[])?.[0]?.nickname ?? "Student",
+          balance: (g.teams as unknown as { balance: number }[])?.[0]?.balance ?? 0,
+          endedAt: g.ended_at as string,
+        }))
+      );
+    })();
+  }, [code, setId, supabase]);
+
+  async function getLink() {
+    if (teacherPlan !== "pro") {
+      onNeedsUpgrade();
+      return;
+    }
+    setCreating(true);
+    const { data, error } = await supabase.rpc("create_homework_link", { p_set_id: setId });
+    setCreating(false);
+    if (!error && data) setCode(data.code);
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="mb-1 inline-block rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+            Pro
+          </span>
+          <h2 className="text-lg font-bold">Homework</h2>
+          <p className="text-sm text-ink-muted">Share a link so a student can practice this set solo.</p>
+        </div>
+        {!code && (
+          <button onClick={getLink} disabled={creating} className="btn btn-secondary px-4 py-2 text-sm disabled:opacity-50">
+            {creating ? "Creating…" : "Get homework link"}
+          </button>
+        )}
+      </div>
+
+      {code && (
+        <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4">
+          <input
+            readOnly
+            value={`${origin}/homework/${code}`}
+            onFocus={(e) => e.target.select()}
+            className="rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm text-ink-muted outline-none focus:border-teal-deep"
+          />
+
+          {attempts && attempts.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Past attempts</p>
+              {attempts.map((a) => (
+                <a
+                  key={a.gameId}
+                  href={`/host/${a.gameId}`}
+                  className="flex items-center justify-between rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm hover:border-teal-deep"
+                >
+                  <span className="font-semibold">{a.nickname}</span>
+                  <span className="text-ink-muted">{a.balance.toLocaleString()} coins</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

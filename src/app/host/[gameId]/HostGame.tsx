@@ -9,6 +9,7 @@ import UpgradeModal from "@/components/UpgradeModal";
 import {
   TEAM_COLORS,
   TEAM_NAME_POOL,
+  type ErrorReportRow,
   type Game,
   type GameSet,
   type Player,
@@ -41,7 +42,7 @@ export default function HostGame({
   }
 
   if (game.status === "ended") {
-    return <LeaderboardView set={set} teams={teams} statements={statements} />;
+    return <LeaderboardView game={game} set={set} teams={teams} statements={statements} teacherPlan={teacherPlan} />;
   }
 
   return (
@@ -544,15 +545,28 @@ function TeamBidTile({
 
 // ---------- Leaderboard ----------
 
-function LeaderboardView({ set, teams, statements }: { set: GameSet; teams: Team[]; statements: Statement[] }) {
+function LeaderboardView({
+  game,
+  set,
+  teams,
+  statements,
+  teacherPlan,
+}: {
+  game: Game;
+  set: GameSet;
+  teams: Team[];
+  statements: Statement[];
+  teacherPlan: "free" | "pro";
+}) {
   const ranked = useMemo(() => [...teams].sort((a, b) => b.balance - a.balance), [teams]);
   const winner = ranked[0];
+  const isHomework = game.mode === "homework";
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Game over</h1>
+          <h1 className="text-2xl font-bold">{isHomework ? "Homework complete" : "Game over"}</h1>
           <p className="text-sm text-ink-muted">{set.title}</p>
         </div>
         <div className="flex gap-2">
@@ -562,7 +576,11 @@ function LeaderboardView({ set, teams, statements }: { set: GameSet; teams: Team
         </div>
       </div>
 
-      {winner && <p className="text-center text-xl font-bold text-teal-deep">{winner.name} wins!</p>}
+      {winner && (
+        <p className="text-center text-xl font-bold text-teal-deep">
+          {isHomework ? `${winner.name} finished with ${winner.balance.toLocaleString()} coins` : `${winner.name} wins!`}
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {ranked.map((t, i) => (
@@ -594,6 +612,114 @@ function LeaderboardView({ set, teams, statements }: { set: GameSet; teams: Team
           ))}
         </div>
       </div>
+
+      <ErrorReportCard gameId={game.id} teams={teams} teacherPlan={teacherPlan} />
+    </div>
+  );
+}
+
+function ErrorReportCard({
+  gameId,
+  teams,
+  teacherPlan,
+}: {
+  gameId: string;
+  teams: Team[];
+  teacherPlan: "free" | "pro";
+}) {
+  const supabase = createClient();
+  const [open, setOpen] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<ErrorReportRow[] | null>(null);
+
+  async function reveal() {
+    if (teacherPlan !== "pro") {
+      setShowUpgrade(true);
+      return;
+    }
+    setOpen(true);
+    if (rows) return;
+    setLoading(true);
+    const { data } = await supabase.rpc("get_game_error_report", { p_game_id: gameId });
+    setRows((data as ErrorReportRow[]) ?? []);
+    setLoading(false);
+  }
+
+  const byPlayer = useMemo(() => {
+    if (!rows) return [];
+    const map = new Map<
+      string,
+      { playerId: string; nickname: string; teamName: string; teamColor: string; tags: { tag: string; count: number }[] }
+    >();
+    for (const r of rows) {
+      if (!map.has(r.player_id)) {
+        map.set(r.player_id, {
+          playerId: r.player_id,
+          nickname: r.nickname,
+          teamName: r.team_name,
+          teamColor: r.team_color,
+          tags: [],
+        });
+      }
+      map.get(r.player_id)!.tags.push({ tag: r.error_tag, count: Number(r.tag_count) });
+    }
+    return [...map.values()].map((p) => ({ ...p, tags: p.tags.sort((a, b) => b.count - a.count).slice(0, 3) }));
+  }, [rows]);
+
+  if (teams.length === 0) return null;
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="mb-1 inline-block rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+            Pro
+          </span>
+          <h2 className="text-lg font-bold">See what each student got wrong</h2>
+          <p className="text-sm text-ink-muted">
+            Error reports show every student&apos;s top mistakes, so you know what to teach next.
+          </p>
+        </div>
+        {!open && (
+          <button onClick={reveal} className="btn btn-secondary px-4 py-2 text-sm">
+            {teacherPlan === "pro" ? "Show report" : "Upgrade to Pro"}
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
+          {loading && <p className="text-sm text-ink-muted">Loading…</p>}
+          {!loading && byPlayer.length === 0 && (
+            <p className="text-sm text-ink-muted">No wrong bids to report — nobody got caught out this time.</p>
+          )}
+          {byPlayer.map((p) => (
+            <div key={p.playerId} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full" style={{ background: p.teamColor }} />
+                <span className="text-sm font-semibold">{p.nickname}</span>
+                {p.teamName !== p.nickname && <span className="text-xs text-ink-muted">{p.teamName}</span>}
+              </div>
+              <div className="flex gap-1.5">
+                {p.tags.map((t) => (
+                  <span key={t.tag} className="rounded-full bg-bg px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                    {t.tag} × {t.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showUpgrade && (
+        <UpgradeModal
+          title="See what each student got wrong"
+          message="Upgrade to Pro for full per-student error reports — the class balances above are free, this breakdown is Pro."
+          onClose={() => setShowUpgrade(false)}
+        />
+      )}
     </div>
   );
 }
