@@ -32,9 +32,9 @@ export default async function GenerateSetPage() {
             Upgrade to Pro for unlimited AI set generations (fair-use cap), or build a set by hand instead.
           </p>
           <div className="flex flex-col gap-2">
-            <button disabled className="btn btn-primary py-2.5 text-sm opacity-60">
-              Upgrade to Pro — pricing coming soon
-            </button>
+            <Link href="/upgrade" className="btn btn-primary py-2.5 text-center text-sm">
+              Upgrade to Pro — $9.99/mo or $89.99/yr
+            </Link>
             <Link href="/sets/new" className="btn btn-secondary py-2.5 text-sm">
               Build a set by hand instead
             </Link>

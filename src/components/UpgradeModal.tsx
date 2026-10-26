@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function UpgradeModal({
   title,
   message,
@@ -21,9 +23,9 @@ export default function UpgradeModal({
         <h2 className="mb-2 text-lg font-bold">{title}</h2>
         <p className="mb-5 text-sm text-ink-muted">{message}</p>
         <div className="flex flex-col gap-2">
-          <button disabled className="btn btn-primary py-2.5 text-sm opacity-60">
-            Upgrade to Pro — pricing coming soon
-          </button>
+          <Link href="/upgrade" className="btn btn-primary py-2.5 text-center text-sm">
+            Upgrade to Pro — $9.99/mo or $89.99/yr
+          </Link>
           <button onClick={onClose} className="btn btn-secondary py-2.5 text-sm">
             Not now
           </button>

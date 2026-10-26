@@ -31,9 +31,9 @@ export default async function NewSetPage() {
             Upgrade to Pro for unlimited saved sets, or delete one of your existing sets to make room.
           </p>
           <div className="flex flex-col gap-2">
-            <button disabled className="btn btn-primary py-2.5 text-sm opacity-60">
-              Upgrade to Pro — pricing coming soon
-            </button>
+            <Link href="/upgrade" className="btn btn-primary py-2.5 text-center text-sm">
+              Upgrade to Pro — $9.99/mo or $89.99/yr
+            </Link>
             <Link href="/library" className="btn btn-secondary py-2.5 text-sm">
               Back to my sets
             </Link>

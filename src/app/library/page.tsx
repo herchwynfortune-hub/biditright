@@ -66,11 +66,14 @@ export default async function LibraryPage() {
             <span className="text-sm font-semibold">New set by hand</span>
           </Link>
         ) : (
-          <div className="card flex flex-col items-center justify-center gap-2 p-5 text-center">
+          <Link
+            href="/upgrade"
+            className="card flex flex-col items-center justify-center gap-2 p-5 text-center text-ink-muted hover:text-teal-deep"
+          >
             <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">Pro</span>
-            <p className="text-sm font-semibold">Saved 3 of 3 free sets</p>
-            <p className="text-xs text-ink-muted">Upgrade to Pro for unlimited saved sets.</p>
-          </div>
+            <p className="text-sm font-semibold text-ink">Saved 3 of 3 free sets</p>
+            <p className="text-xs">Upgrade to Pro for unlimited saved sets.</p>
+          </Link>
         )}
 
         <div className="card flex flex-col items-center justify-center gap-2 p-5 text-center text-ink-muted">

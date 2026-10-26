@@ -24,14 +24,17 @@ const PLANS = [
   },
   {
     name: "Pro",
-    price: "TBD",
+    price: "$9.99/mo",
+    priceNote: "or $89.99/yr",
     tagline: "Saved time and insight for regular teachers.",
     items: [
       "Unlimited saved sets",
       "Up to 10 teams",
       "Full premade set library",
-      "AI set generator",
       "Per-student error reports",
+      "Homework / solo mode",
+      "5 themes + your own logo",
+      "Export sets to a PDF worksheet",
     ],
   },
 ];
@@ -92,13 +95,14 @@ export default function LandingPage() {
         <h2 className="mb-8 text-center text-2xl font-bold">Free to play. Pro when you&apos;re ready.</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {PLANS.map((plan) => (
-            <div key={plan.name} className="card p-8">
+            <div key={plan.name} className="card flex flex-col p-8">
               <div className="mb-1 flex items-baseline gap-2">
                 <h3 className="text-xl font-bold">{plan.name}</h3>
                 <span className="text-ink-muted">{plan.price}</span>
+                {"priceNote" in plan && <span className="text-xs text-ink-muted">{plan.priceNote}</span>}
               </div>
               <p className="mb-5 text-sm text-ink-muted">{plan.tagline}</p>
-              <ul className="flex flex-col gap-2 text-sm">
+              <ul className="mb-6 flex flex-col gap-2 text-sm">
                 {plan.items.map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal-deep" />
@@ -106,12 +110,15 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
+              <Link
+                href={plan.name === "Pro" ? "/upgrade" : "/login"}
+                className={`btn ${plan.name === "Pro" ? "btn-primary" : "btn-secondary"} mt-auto py-2.5 text-center text-sm`}
+              >
+                {plan.name === "Pro" ? "Upgrade to Pro" : "Sign up free"}
+              </Link>
             </div>
           ))}
         </div>
-        <p className="mt-4 text-center text-xs text-ink-muted">
-          Pricing is still being worked out — Free already covers a full class every week.
-        </p>
       </section>
 
       <footer className="mt-auto border-t border-border px-6 py-6 text-center text-xs text-ink-muted">
