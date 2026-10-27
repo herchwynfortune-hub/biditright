@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
 
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { name } },
@@ -29,6 +30,11 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
         setLoading(false);
+        return;
+      }
+      if (!data.session) {
+        setLoading(false);
+        setConfirmationSent(true);
         return;
       }
     } else {
@@ -52,6 +58,26 @@ export default function LoginPage() {
           <span className="text-lg font-bold">bid it right</span>
         </Link>
 
+        {confirmationSent ? (
+          <div className="flex flex-col gap-3 text-center">
+            <p className="font-semibold">Check your email</p>
+            <p className="text-sm text-ink-muted">
+              We sent a confirmation link to <span className="font-medium text-ink">{email}</span>. Click it to
+              activate your account, then come back here to sign in.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmationSent(false);
+                setMode("signin");
+              }}
+              className="btn btn-primary mt-2 py-3 text-base"
+            >
+              Back to sign in
+            </button>
+          </div>
+        ) : (
+          <>
         <div className="mb-6 flex rounded-[var(--radius-control)] bg-bg p-1 text-sm font-semibold">
           <button
             type="button"
@@ -116,6 +142,8 @@ export default function LoginPage() {
             {loading ? "Please wait…" : mode === "signup" ? "Create free account" : "Sign in"}
           </button>
         </form>
+          </>
+        )}
       </div>
     </div>
   );

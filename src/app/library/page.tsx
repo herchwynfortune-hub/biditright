@@ -34,6 +34,11 @@ export default async function LibraryPage() {
           <span className="text-lg font-bold">bid it right</span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
+          {!isPro && (
+            <Link href="/upgrade" className="font-semibold text-teal-deep hover:underline">
+              Upgrade
+            </Link>
+          )}
           <span className="text-ink-muted">{teacher?.name ?? user.email}</span>
           <SignOutButton />
         </div>
