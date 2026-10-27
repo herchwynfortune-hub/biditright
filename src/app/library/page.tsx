@@ -35,8 +35,11 @@ export default async function LibraryPage() {
         </Link>
         <div className="flex items-center gap-3 text-sm">
           {!isPro && (
-            <Link href="/upgrade" className="font-semibold text-teal-deep hover:underline">
-              Upgrade
+            <Link
+              href="/upgrade"
+              className="rounded-full bg-gold px-4 py-1.5 font-bold text-ink transition-transform hover:scale-105"
+            >
+              Upgrade to Pro
             </Link>
           )}
           <span className="text-ink-muted">{teacher?.name ?? user.email}</span>
