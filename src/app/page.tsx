@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HeroIllustration from "@/components/HeroIllustration";
 
 const FEATURES = [
   {
@@ -80,6 +81,8 @@ export default function LandingPage() {
             See how it works
           </a>
         </div>
+
+        <HeroIllustration />
       </section>
 
       <section id="how" className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-5 px-6 pb-20 sm:grid-cols-3">
