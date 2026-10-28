@@ -97,6 +97,7 @@ function LobbyView({
   const [error, setError] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState<"team" | "theme" | "logo" | null>(null);
   const maxTeams = teacherPlan === "pro" ? 10 : 4;
+  const joinHost = typeof window !== "undefined" ? window.location.host : "";
 
   async function syncSettings(patch: Partial<Pick<Game, "mode" | "timer_seconds" | "double_round" | "theme">>) {
     await supabase.from("games").update(patch).eq("id", game.id);
@@ -192,7 +193,7 @@ function LobbyView({
 
           {mode === "devices" && (
             <div className="rounded-[var(--radius-card)] bg-teal-deep p-6 text-white">
-              <p className="mb-1 text-sm opacity-80">Go to [your-site]/join and enter</p>
+              <p className="mb-1 text-sm opacity-80">Go to {joinHost}/join and enter</p>
               <div className="flex items-end justify-between">
                 <div className="font-mono text-5xl font-bold tracking-wider">
                   {game.join_code.slice(0, 3)} {game.join_code.slice(3)}
