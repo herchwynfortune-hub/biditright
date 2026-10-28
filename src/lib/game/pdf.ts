@@ -64,10 +64,17 @@ export function exportSetToPdf(set: GameSet, statements: Statement[]) {
       y = MARGIN;
     }
 
+    const isSentenceMode = set.answer_mode === "sentence";
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(s.is_correct ? 20 : 180, s.is_correct ? 120 : 50, s.is_correct ? 90 : 40);
-    doc.text(`${i + 1}. ${s.is_correct ? "Correct" : "Incorrect"}`, MARGIN, y);
+    if (isSentenceMode) {
+      doc.setTextColor(13, 92, 88);
+      doc.text(`${i + 1}. Write the sentence`, MARGIN, y);
+    } else {
+      doc.setTextColor(s.is_correct ? 20 : 180, s.is_correct ? 120 : 50, s.is_correct ? 90 : 40);
+      doc.text(`${i + 1}. ${s.is_correct ? "Correct" : "Incorrect"}`, MARGIN, y);
+    }
     y += 14;
 
     doc.setFont("helvetica", "normal");
@@ -77,13 +84,19 @@ export function exportSetToPdf(set: GameSet, statements: Statement[]) {
     doc.text(statementLines, MARGIN, y);
     y += statementLines.length * 12 + 4;
 
-    if (!s.is_correct && s.correction) {
+    if (isSentenceMode && s.correction) {
+      doc.setTextColor(13, 92, 88);
+      const fixLines = doc.splitTextToSize(`Answer: ${s.correction}`, CONTENT_WIDTH);
+      doc.text(fixLines, MARGIN, y);
+      y += fixLines.length * 12 + 2;
+    }
+    if (!isSentenceMode && !s.is_correct && s.correction) {
       doc.setTextColor(13, 92, 88);
       const fixLines = doc.splitTextToSize(`Fix: ${s.correction}`, CONTENT_WIDTH);
       doc.text(fixLines, MARGIN, y);
       y += fixLines.length * 12 + 2;
     }
-    if (!s.is_correct && s.explanation) {
+    if ((isSentenceMode || !s.is_correct) && s.explanation) {
       doc.setTextColor(110, 110, 110);
       doc.setFontSize(9);
       const explLines = doc.splitTextToSize(s.explanation, CONTENT_WIDTH);

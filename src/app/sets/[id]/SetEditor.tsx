@@ -23,6 +23,7 @@ export default function SetEditor({
 }) {
   const supabase = createClient();
   const router = useRouter();
+  const isSentenceMode = set.answer_mode === "sentence";
   const [statements, setStatements] = useState<Statement[]>(initialStatements);
   const [hosting, startHosting] = useTransition();
   const [hostError, setHostError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function SetEditor({
       .update({
         text: statement.text,
         is_correct: statement.is_correct,
-        correction: statement.is_correct ? null : statement.correction,
+        correction: isSentenceMode ? statement.correction : statement.is_correct ? null : statement.correction,
         explanation: statement.explanation,
         error_tag: statement.error_tag,
       })
@@ -133,7 +134,8 @@ export default function SetEditor({
           <h1 className="text-2xl font-bold">{set.title}</h1>
           <p className="text-sm text-ink-muted">
             {set.level ? `${set.level} · ` : ""}
-            {statements.length} statements · {correctCount} correct · {statements.length - correctCount} wrong
+            {statements.length} statements
+            {!isSentenceMode && ` · ${correctCount} correct · ${statements.length - correctCount} wrong`}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -183,33 +185,35 @@ export default function SetEditor({
                 value={s.text}
                 onChange={(e) => update(s.id, { text: e.target.value })}
                 onBlur={() => persist(statements.find((x) => x.id === s.id)!)}
-                placeholder={`Statement ${i + 1}`}
+                placeholder={isSentenceMode ? `Prompt ${i + 1} (e.g. "She ___ to school every day.")` : `Statement ${i + 1}`}
                 rows={2}
                 className="flex-1 resize-none rounded-[var(--radius-control)] border border-border px-3 py-2 text-base outline-none focus:border-teal-deep disabled:bg-bg"
               />
 
-              <div className="flex shrink-0 overflow-hidden rounded-[var(--radius-control)] border border-border text-xs font-semibold">
-                <button
-                  disabled={!isOwner}
-                  onClick={() => {
-                    update(s.id, { is_correct: true });
-                    persist({ ...s, is_correct: true });
-                  }}
-                  className={`px-3 py-2 ${s.is_correct ? "bg-correct text-white" : "bg-card text-ink-muted"}`}
-                >
-                  Correct
-                </button>
-                <button
-                  disabled={!isOwner}
-                  onClick={() => {
-                    update(s.id, { is_correct: false });
-                    persist({ ...s, is_correct: false });
-                  }}
-                  className={`px-3 py-2 ${!s.is_correct ? "bg-incorrect text-white" : "bg-card text-ink-muted"}`}
-                >
-                  Wrong
-                </button>
-              </div>
+              {!isSentenceMode && (
+                <div className="flex shrink-0 overflow-hidden rounded-[var(--radius-control)] border border-border text-xs font-semibold">
+                  <button
+                    disabled={!isOwner}
+                    onClick={() => {
+                      update(s.id, { is_correct: true });
+                      persist({ ...s, is_correct: true });
+                    }}
+                    className={`px-3 py-2 ${s.is_correct ? "bg-correct text-white" : "bg-card text-ink-muted"}`}
+                  >
+                    Correct
+                  </button>
+                  <button
+                    disabled={!isOwner}
+                    onClick={() => {
+                      update(s.id, { is_correct: false });
+                      persist({ ...s, is_correct: false });
+                    }}
+                    className={`px-3 py-2 ${!s.is_correct ? "bg-incorrect text-white" : "bg-card text-ink-muted"}`}
+                  >
+                    Wrong
+                  </button>
+                </div>
+              )}
 
               {isOwner && (
                 <button
@@ -222,14 +226,14 @@ export default function SetEditor({
               )}
             </div>
 
-            {!s.is_correct && (
+            {(isSentenceMode || !s.is_correct) && (
               <div className="ml-7 flex flex-col gap-2 sm:flex-row">
                 <input
                   disabled={!isOwner}
                   value={s.correction ?? ""}
                   onChange={(e) => update(s.id, { correction: e.target.value })}
                   onBlur={() => persist(statements.find((x) => x.id === s.id)!)}
-                  placeholder="Correction"
+                  placeholder={isSentenceMode ? "Correct sentence" : "Correction"}
                   className="flex-1 rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm outline-none focus:border-teal-deep disabled:bg-bg"
                 />
                 <select

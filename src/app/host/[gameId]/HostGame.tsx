@@ -11,6 +11,7 @@ import { THEMES, type ThemeId } from "@/lib/game/themes";
 import {
   TEAM_COLORS,
   TEAM_NAME_POOL,
+  type AnswerMode,
   type ErrorReportRow,
   type Game,
   type GameSet,
@@ -528,7 +529,9 @@ function ActiveHostView({
       {!revealResult ? (
         <>
           <div className="card flex flex-col items-center gap-4 px-10 py-12 text-center">
-            <p className="text-sm font-semibold text-ink-muted">Correct or not? Place your bids.</p>
+            <p className="text-sm font-semibold text-ink-muted">
+              {game.answer_mode === "sentence" ? "Write the sentence and place your bids." : "Correct or not? Place your bids."}
+            </p>
             <p className="text-[clamp(28px,4vw,48px)] font-bold leading-tight">{currentStatement.text}</p>
             <div className="flex items-center gap-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Bids close in</div>
@@ -544,7 +547,15 @@ function ActiveHostView({
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {teams.map((t) => (
-              <TeamBidTile key={t.id} team={t} locked={lockedTeamIds.has(t.id)} mode={game.mode} gameId={game.id} statementId={currentStatement.id} />
+              <TeamBidTile
+                key={t.id}
+                team={t}
+                locked={lockedTeamIds.has(t.id)}
+                mode={game.mode}
+                answerMode={game.answer_mode}
+                gameId={game.id}
+                statementId={currentStatement.id}
+              />
             ))}
           </div>
 
@@ -555,15 +566,18 @@ function ActiveHostView({
       ) : (
         <>
           <div className="card flex flex-col items-center gap-3 px-10 py-10 text-center">
-            <span
-              className={`rounded-full px-4 py-1 text-sm font-bold text-white ${
-                revealResult.is_correct ? "bg-correct" : "bg-incorrect"
-              }`}
-            >
-              {revealResult.is_correct ? "Correct" : "Incorrect"}
+            <span className="rounded-full bg-teal-deep px-4 py-1 text-sm font-bold text-white">
+              {revealResult.answer_mode === "sentence"
+                ? "The correct sentence"
+                : revealResult.is_correct
+                  ? "The statement was true"
+                  : "The statement was false"}
             </span>
             <p className="text-[clamp(24px,3.5vw,40px)] font-bold">{revealResult.text}</p>
-            {!revealResult.is_correct && revealResult.correction && (
+            {revealResult.answer_mode === "sentence" && revealResult.correction && (
+              <p className="text-lg font-semibold text-teal-deep">{revealResult.correction}</p>
+            )}
+            {revealResult.answer_mode === "true_false" && !revealResult.is_correct && revealResult.correction && (
               <p className="text-lg font-semibold text-teal-deep">{revealResult.correction}</p>
             )}
             {revealResult.explanation && <p className="max-w-xl text-sm text-ink-muted">{revealResult.explanation}</p>}
@@ -572,16 +586,20 @@ function ActiveHostView({
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {teams.map((t) => {
               const bid = revealResult.bids.find((b) => b.team_id === t.id);
-              const delta = bid ? (revealResult.is_correct ? bid.amount : -bid.amount) * revealResult.multiplier : 0;
+              const delta = bid ? (bid.correct ? bid.amount : -bid.amount) * revealResult.multiplier : 0;
               return (
                 <div key={t.id} className="card p-4" style={{ borderTop: `4px solid ${t.color}` }}>
                   <div className="font-bold">{t.name}</div>
-                  <div className="text-sm text-ink-muted">Bid {bid?.amount ?? 0}</div>
+                  <div className="text-sm text-ink-muted">
+                    Bid {bid?.amount ?? 0}
+                    {bid?.answer && revealResult.answer_mode === "true_false" && ` · said ${bid.answer}`}
+                    {bid?.answer && revealResult.answer_mode === "sentence" && ` · "${bid.answer}"`}
+                  </div>
                   <div className={`text-sm font-semibold ${delta >= 0 ? "text-correct" : "text-incorrect"}`}>
                     {delta >= 0 ? "+" : ""}
                     {delta} → {t.balance}
                   </div>
-                  {!revealResult.is_correct && bid && bid.amount > 0 && !resolvedFixTeamIds.has(t.id) && (
+                  {bid && !bid.correct && bid.amount > 0 && !resolvedFixTeamIds.has(t.id) && (
                     <button onClick={() => setFixTeamId(t.id)} className="btn btn-secondary mt-2 w-full py-1.5 text-xs">
                       Fix it!
                     </button>
@@ -625,28 +643,39 @@ function TeamBidTile({
   team,
   locked,
   mode,
+  answerMode,
   gameId,
   statementId,
 }: {
   team: Team;
   locked: boolean;
   mode: Game["mode"];
+  answerMode: AnswerMode;
   gameId: string;
   statementId: string;
 }) {
   const supabase = createClient();
   const [padOpen, setPadOpen] = useState(false);
   const [padValue, setPadValue] = useState("");
+  const [tfAnswer, setTfAnswer] = useState<"true" | "false" | null>(null);
+  const [sentenceAnswer, setSentenceAnswer] = useState("");
+
+  const answer = answerMode === "true_false" ? tfAnswer : sentenceAnswer.trim() || null;
+  const canSubmit = answer !== null && answer !== "";
 
   async function submit(amount: number) {
+    if (!canSubmit) return;
     await supabase.rpc("submit_bid", {
       p_game_id: gameId,
       p_statement_id: statementId,
       p_team_id: team.id,
       p_amount: amount,
+      p_answer: answer,
     });
     setPadOpen(false);
     setPadValue("");
+    setTfAnswer(null);
+    setSentenceAnswer("");
   }
 
   if (mode === "devices") {
@@ -672,6 +701,33 @@ function TeamBidTile({
       </button>
       {padOpen && (
         <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+          {answerMode === "true_false" ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTfAnswer("true")}
+                className={`flex-1 rounded-[10px] py-2 text-sm font-bold ${
+                  tfAnswer === "true" ? "bg-correct text-white" : "bg-bg text-ink-muted"
+                }`}
+              >
+                True
+              </button>
+              <button
+                onClick={() => setTfAnswer("false")}
+                className={`flex-1 rounded-[10px] py-2 text-sm font-bold ${
+                  tfAnswer === "false" ? "bg-incorrect text-white" : "bg-bg text-ink-muted"
+                }`}
+              >
+                False
+              </button>
+            </div>
+          ) : (
+            <input
+              value={sentenceAnswer}
+              onChange={(e) => setSentenceAnswer(e.target.value)}
+              placeholder="Team's sentence"
+              className="rounded-[var(--radius-control)] border border-border px-3 py-2 text-sm"
+            />
+          )}
           <input
             value={padValue}
             readOnly
@@ -694,10 +750,14 @@ function TeamBidTile({
             ))}
           </div>
           <div className="flex gap-2">
-            <button onClick={() => submit(team.balance)} className="btn btn-secondary flex-1 py-2 text-xs">
+            <button onClick={() => submit(team.balance)} disabled={!canSubmit} className="btn btn-secondary flex-1 py-2 text-xs disabled:opacity-50">
               All in
             </button>
-            <button onClick={() => submit(Number(padValue) || 0)} className="btn btn-primary flex-1 py-2 text-xs">
+            <button
+              onClick={() => submit(Number(padValue) || 0)}
+              disabled={!canSubmit}
+              className="btn btn-primary flex-1 py-2 text-xs disabled:opacity-50"
+            >
               Save and hide bid
             </button>
           </div>
@@ -763,14 +823,17 @@ function LeaderboardView({
             <div key={s.id} className="flex items-start gap-3 border-b border-border pb-3 last:border-0">
               <span
                 className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${
-                  s.is_correct ? "bg-correct" : "bg-incorrect"
+                  set.answer_mode === "sentence" ? "bg-teal-deep" : s.is_correct ? "bg-correct" : "bg-incorrect"
                 }`}
               >
-                {s.is_correct ? "Correct" : "Wrong"}
+                {set.answer_mode === "sentence" ? "Sentence" : s.is_correct ? "Correct" : "Wrong"}
               </span>
               <div>
                 <p className="text-sm font-medium">{s.text}</p>
-                {!s.is_correct && s.correction && <p className="text-xs text-ink-muted">Fix: {s.correction}</p>}
+                {set.answer_mode === "sentence" && s.correction && <p className="text-xs text-ink-muted">Answer: {s.correction}</p>}
+                {set.answer_mode === "true_false" && !s.is_correct && s.correction && (
+                  <p className="text-xs text-ink-muted">Fix: {s.correction}</p>
+                )}
               </div>
             </div>
           ))}

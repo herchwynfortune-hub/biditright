@@ -9,6 +9,8 @@ export type Statement = {
   error_tag: string | null;
 };
 
+export type AnswerMode = "true_false" | "sentence";
+
 export type GameSet = {
   id: string;
   owner_id: string | null;
@@ -17,6 +19,7 @@ export type GameSet = {
   level: string | null;
   is_premade: boolean;
   pack_id: string | null;
+  answer_mode: AnswerMode;
   created_at: string;
 };
 
@@ -30,6 +33,7 @@ export type Game = {
   current_statement_index: number;
   timer_seconds: number;
   double_round: boolean;
+  answer_mode: AnswerMode;
   theme: string;
   started_at: string | null;
   ended_at: string | null;
@@ -98,11 +102,18 @@ export type BidStatus = {
 export type RevealResult = {
   statement_id: string;
   text: string;
+  answer_mode: AnswerMode;
   is_correct: boolean;
   correction: string | null;
   explanation: string | null;
   multiplier: number;
-  bids: { team_id: string; amount: number; entered_by: "captain" | "teacher" }[];
+  bids: {
+    team_id: string;
+    amount: number;
+    answer: string | null;
+    entered_by: "captain" | "teacher";
+    correct: boolean;
+  }[];
 };
 
 export const TEAM_COLORS = [
