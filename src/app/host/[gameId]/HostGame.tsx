@@ -110,11 +110,14 @@ function LobbyView({
     const { error } = await supabase.rpc("add_team", { p_game_id: game.id });
     if (error?.message.includes("FREE_PLAN_TEAM_LIMIT")) {
       setShowUpgrade("team");
+    } else if (error) {
+      setError(error.message);
     }
   }
 
   async function removeTeam(teamId: string) {
-    await supabase.rpc("remove_team", { p_team_id: teamId });
+    const { error } = await supabase.rpc("remove_team", { p_team_id: teamId });
+    if (error) setError(error.message);
   }
 
   async function shuffleTeams() {
@@ -273,6 +276,21 @@ function LobbyView({
                 </button>
               </div>
             ))}
+            {(() => {
+              const unassigned = players.filter((p) => !p.team_id);
+              return (
+                unassigned.length > 0 && (
+                  <div className="rounded-[var(--radius-control)] border border-dashed border-border p-3">
+                    <div className="text-xs font-semibold text-ink-muted">
+                      {unassigned.length} waiting to be assigned a team
+                    </div>
+                    <div className="text-xs text-ink-muted">
+                      {unassigned.map((p) => p.nickname).join(" · ")} — split evenly across teams when you start
+                    </div>
+                  </div>
+                )
+              );
+            })()}
             <button
               onClick={() => (teams.length >= maxTeams ? setShowUpgrade("team") : addTeam())}
               className="btn btn-secondary py-2.5 text-sm"
