@@ -129,6 +129,8 @@ function LobbyView({
           .eq("id", t.id)
       )
     );
+    const { error } = await supabase.rpc("rebalance_teams", { p_game_id: game.id });
+    if (error) setError(error.message);
   }
 
   async function startGame() {
@@ -285,7 +287,7 @@ function LobbyView({
                       {unassigned.length} waiting to be assigned a team
                     </div>
                     <div className="text-xs text-ink-muted">
-                      {unassigned.map((p) => p.nickname).join(" · ")} — split evenly across teams when you start
+                      {unassigned.map((p) => p.nickname).join(" · ")} — assigned automatically as soon as a team exists
                     </div>
                   </div>
                 )
