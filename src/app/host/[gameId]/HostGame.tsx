@@ -97,7 +97,7 @@ function LobbyView({
   const [error, setError] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState<"team" | "theme" | "logo" | null>(null);
   const maxTeams = teacherPlan === "pro" ? 10 : 4;
-  const joinHost = typeof window !== "undefined" ? window.location.host : "";
+  const joinHost = typeof window !== "undefined" ? window.location.host.replace(/^www\./, "") : "";
 
   async function syncSettings(patch: Partial<Pick<Game, "mode" | "timer_seconds" | "double_round" | "theme">>) {
     await supabase.from("games").update(patch).eq("id", game.id);
