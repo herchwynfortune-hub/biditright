@@ -39,7 +39,7 @@ export default async function SetPage({ params }: { params: Promise<{ id: string
               Upgrade to Pro — $9.99/mo or $89.99/yr
             </Link>
             <Link href="/library" className="btn btn-secondary py-2.5 text-sm">
-              Back to my sets
+              Back to premade sets
             </Link>
           </div>
         </div>
@@ -66,8 +66,11 @@ export default async function SetPage({ params }: { params: Promise<{ id: string
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/library" className="text-sm font-semibold text-ink-muted hover:text-ink">
-          ← My sets
+        <Link
+          href={isOwner ? "/library/my-sets" : "/library"}
+          className="text-sm font-semibold text-ink-muted hover:text-ink"
+        >
+          {isOwner ? "← My sets" : "← Premade sets"}
         </Link>
       </div>
 

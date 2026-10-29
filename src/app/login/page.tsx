@@ -46,7 +46,7 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/library");
+    router.push("/library/my-sets");
     router.refresh();
   }
 

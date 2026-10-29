@@ -822,8 +822,8 @@ function LeaderboardView({
           <p className="text-sm text-ink-muted">{set.title}</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/library" className="btn btn-secondary px-4 py-2 text-sm">
-            Back to library
+          <Link href="/library/my-sets" className="btn btn-secondary px-4 py-2 text-sm">
+            Back to my sets
           </Link>
         </div>
       </div>

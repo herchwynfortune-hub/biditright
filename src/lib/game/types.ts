@@ -67,6 +67,7 @@ export type PremadeSetSummary = {
   level: string | null;
   pack_id: string | null;
   statement_count: number;
+  created_at: string;
 };
 
 export type SetSummary = {

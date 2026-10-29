@@ -38,7 +38,7 @@ export default async function GenerateSetPage() {
             <Link href="/sets/new" className="btn btn-secondary py-2.5 text-sm">
               Build a set by hand instead
             </Link>
-            <Link href="/library" className="text-center text-xs text-ink-muted hover:text-ink">
+            <Link href="/library/my-sets" className="text-center text-xs text-ink-muted hover:text-ink">
               Back to my sets
             </Link>
           </div>

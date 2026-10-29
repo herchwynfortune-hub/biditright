@@ -62,7 +62,7 @@ export default function UpgradeClient({
               ? `Status: ${subscriptionStatus}`
               : "Thanks for supporting Bid It Right."}
         </p>
-        <Link href="/library" className="btn btn-secondary mt-6 inline-block px-5 py-2.5 text-sm">
+        <Link href="/library/my-sets" className="btn btn-secondary mt-6 inline-block px-5 py-2.5 text-sm">
           Back to my sets
         </Link>
       </div>

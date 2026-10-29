@@ -34,7 +34,7 @@ export default async function NewSetPage() {
             <Link href="/upgrade" className="btn btn-primary py-2.5 text-center text-sm">
               Upgrade to Pro — $9.99/mo or $89.99/yr
             </Link>
-            <Link href="/library" className="btn btn-secondary py-2.5 text-sm">
+            <Link href="/library/my-sets" className="btn btn-secondary py-2.5 text-sm">
               Back to my sets
             </Link>
           </div>
