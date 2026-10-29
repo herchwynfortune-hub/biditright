@@ -159,6 +159,10 @@ export default function PlayPage({ params }: { params: Promise<{ gameId: string 
             {myBid.correct ? "Your team got it right" : "Your team got it wrong"}
           </span>
         )}
+        {revealResult.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={revealResult.image_url} alt="" className="max-h-48 rounded-[var(--radius-card)] object-contain" />
+        )}
         <p className="text-2xl font-bold">{revealResult.text}</p>
         {isSentenceMode && revealResult.correction && <p className="font-semibold text-teal-deep">{revealResult.correction}</p>}
         {!isSentenceMode && !revealResult.is_correct && revealResult.correction && (
@@ -255,6 +259,10 @@ function BidScreen({
         <p className="text-sm font-semibold text-white/80">
           {team.name} · {team.balance.toLocaleString()} coins
         </p>
+        {statement.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={statement.image_url} alt="" className="max-h-48 rounded-[var(--radius-card)] border-2 border-white/30 object-contain" />
+        )}
         <p className="text-2xl font-bold text-white">{statement.text}</p>
         <p className="text-sm text-white/80">Your captain is placing the bid for your team.</p>
       </div>
@@ -317,6 +325,10 @@ function BidScreen({
           Statement {statementNumber} of {total} ·{" "}
           {answerMode === "true_false" ? "Correct or not?" : "Write the correct sentence"}
         </p>
+        {statement.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={statement.image_url} alt="" className="mb-2 max-h-48 w-full rounded-[var(--radius-control)] object-contain" />
+        )}
         <p className="text-xl font-bold">{statement.text}</p>
       </div>
 

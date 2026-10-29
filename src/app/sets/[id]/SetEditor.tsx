@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import UpgradeModal from "@/components/UpgradeModal";
+import ImagePicker from "@/components/ImagePicker";
 import type { GameSet, Statement } from "@/lib/game/types";
 
 const ERROR_TAGS = ["tense", "article", "agreement", "form", "fact", "other"];
@@ -45,6 +46,11 @@ export default function SetEditor({
         error_tag: statement.error_tag,
       })
       .eq("id", statement.id);
+  }
+
+  async function setImage(statementId: string, imageUrl: string | null) {
+    update(statementId, { image_url: imageUrl });
+    await supabase.from("statements").update({ image_url: imageUrl }).eq("id", statementId);
   }
 
   async function addStatement() {
@@ -225,6 +231,12 @@ export default function SetEditor({
                 </button>
               )}
             </div>
+
+            {isOwner && (
+              <div className="ml-7">
+                <ImagePicker statementId={s.id} imageUrl={s.image_url} onChange={(url) => setImage(s.id, url)} />
+              </div>
+            )}
 
             {(isSentenceMode || !s.is_correct) && (
               <div className="ml-7 flex flex-col gap-2 sm:flex-row">

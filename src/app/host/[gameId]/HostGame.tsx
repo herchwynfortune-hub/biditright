@@ -552,6 +552,10 @@ function ActiveHostView({
             <p className="text-sm font-semibold text-ink-muted">
               {game.answer_mode === "sentence" ? "Write the sentence and place your bids." : "Correct or not? Place your bids."}
             </p>
+            {currentStatement.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={currentStatement.image_url} alt="" className="max-h-64 rounded-[var(--radius-card)] object-contain" />
+            )}
             <p className="text-[clamp(28px,4vw,48px)] font-bold leading-tight">{currentStatement.text}</p>
             <div className="flex items-center gap-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Bids close in</div>
@@ -593,6 +597,10 @@ function ActiveHostView({
                   ? "The statement was true"
                   : "The statement was false"}
             </span>
+            {revealResult.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={revealResult.image_url} alt="" className="max-h-64 rounded-[var(--radius-card)] object-contain" />
+            )}
             <p className="text-[clamp(24px,3.5vw,40px)] font-bold">{revealResult.text}</p>
             {revealResult.answer_mode === "sentence" && revealResult.correction && (
               <p className="text-lg font-semibold text-teal-deep">{revealResult.correction}</p>

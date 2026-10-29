@@ -7,6 +7,7 @@ export type Statement = {
   correction: string | null;
   explanation: string | null;
   error_tag: string | null;
+  image_url: string | null;
 };
 
 export type AnswerMode = "true_false" | "sentence";
@@ -102,6 +103,7 @@ export type BidStatus = {
 export type RevealResult = {
   statement_id: string;
   text: string;
+  image_url: string | null;
   answer_mode: AnswerMode;
   is_correct: boolean;
   correction: string | null;
