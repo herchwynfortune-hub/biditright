@@ -39,6 +39,7 @@
   --color-correct: var(--color-correct);
   --color-incorrect: var(--color-incorrect);
   --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-baloo);
 }
 
 body {

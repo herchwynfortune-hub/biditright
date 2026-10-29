@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="card w-full max-w-sm p-8">
         <Link href="/" className="mb-8 flex items-center gap-2">
           <span className="h-7 w-7 rounded-full bg-gold border-2 border-ink" />
-          <span className="text-lg font-bold">bid it right</span>
+          <span className="font-display text-lg font-bold">bid it right</span>
         </Link>
 
         {confirmationSent ? (

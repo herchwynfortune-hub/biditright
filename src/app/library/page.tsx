@@ -24,7 +24,7 @@ export default async function LibraryPage() {
       <LibraryTabs active="premade" />
 
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Premade sets</h1>
+        <h1 className="font-display text-2xl font-bold">Premade sets</h1>
         {!isPro && <span className="text-sm text-ink-muted">Starter sets free · full library on Pro</span>}
       </div>
 

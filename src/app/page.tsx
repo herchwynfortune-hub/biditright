@@ -46,7 +46,7 @@ export default function LandingPage() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2">
           <span className="h-7 w-7 rounded-full bg-gold border-2 border-ink" />
-          <span className="text-lg font-bold">bid it right</span>
+          <span className="font-display text-lg font-bold">bid it right</span>
         </div>
         <nav className="flex items-center gap-4 text-sm font-semibold">
           <a href="#plans" className="text-ink-muted hover:text-ink">
@@ -65,7 +65,7 @@ export default function LandingPage() {
         <span className="rounded-full bg-card px-3 py-1 text-xs font-semibold text-ink-muted border border-border">
           by Approachly Labs
         </span>
-        <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+        <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl">
           The team auction game for your classroom
         </h1>
         <p className="max-w-xl text-lg text-ink-muted">

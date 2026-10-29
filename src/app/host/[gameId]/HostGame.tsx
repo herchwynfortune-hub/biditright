@@ -146,16 +146,23 @@ function LobbyView({
 
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-      <div className="card mb-6 flex items-center justify-between p-5">
-        <div className="flex items-center gap-2">
+      <div className="relative mb-6 flex items-center justify-between overflow-hidden rounded-[var(--radius-card)] bg-ink px-6 py-5 text-white">
+        <svg className="pointer-events-none absolute -right-6 -top-10 opacity-10" width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="56" fill="none" stroke="white" strokeWidth="10" />
+        </svg>
+        <div className="relative flex items-center gap-2">
           <BrandMark logoUrl={logoUrl} />
-          <span className="font-bold">bid it right</span>
-          <span className="text-sm text-ink-muted">
+          <span className="font-display font-bold">bid it right</span>
+          <span className="text-sm text-white/70">
             · Lobby · {set.title} · {teams.length ? `${teams.length} teams` : "no teams yet"}
           </span>
         </div>
-        <button onClick={startGame} disabled={starting} className="btn btn-primary px-5 py-2.5 disabled:opacity-50">
-          {starting ? "Starting…" : "Start game"}
+        <button
+          onClick={startGame}
+          disabled={starting}
+          className="relative -rotate-1 rounded-full bg-gold px-6 py-2.5 font-display font-bold text-ink shadow-[0_3px_0_rgba(0,0,0,0.25)] transition-transform hover:rotate-0 disabled:opacity-50"
+        >
+          {starting ? "Starting…" : "Start game →"}
         </button>
       </div>
 
@@ -164,7 +171,7 @@ function LobbyView({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
           <div className="card p-6">
-            <h2 className="mb-3 text-lg font-bold">How will students play?</h2>
+            <h2 className="mb-3 font-display text-lg font-bold">How will students play?</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 onClick={() => {
@@ -198,15 +205,18 @@ function LobbyView({
           </div>
 
           {mode === "devices" && (
-            <div className="rounded-[var(--radius-card)] bg-teal-deep p-6 text-white">
-              <p className="mb-1 text-sm opacity-80">Go to {joinHost}/join and enter</p>
-              <div className="flex items-end justify-between">
-                <div className="font-mono text-5xl font-bold tracking-wider">
+            <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-teal-deep p-6 text-white">
+              <svg className="pointer-events-none absolute -right-4 -top-6 opacity-10" width="110" height="110" viewBox="0 0 110 110">
+                <circle cx="55" cy="55" r="44" fill="none" stroke="white" strokeWidth="9" />
+              </svg>
+              <p className="relative mb-2 text-sm font-medium opacity-80">Go to {joinHost}/join and enter</p>
+              <div className="relative flex items-end justify-between">
+                <div className="font-display text-5xl font-extrabold tracking-wide">
                   {game.join_code.slice(0, 3)} {game.join_code.slice(3)}
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-gold">{players.length}</div>
-                  <div className="text-xs opacity-80">students joined</div>
+                  <div className="font-display text-3xl font-extrabold text-gold">{players.length}</div>
+                  <div className="text-xs font-semibold opacity-80">joined</div>
                 </div>
               </div>
             </div>
@@ -259,17 +269,25 @@ function LobbyView({
 
         <div className="card p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Teams</h2>
+            <h2 className="font-display text-lg font-bold">Teams</h2>
             <button onClick={shuffleTeams} className="btn btn-secondary px-3 py-1.5 text-xs">
               Shuffle
             </button>
           </div>
           <div className="flex flex-col gap-2">
             {teams.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-[var(--radius-control)] p-3 text-white" style={{ background: t.color }}>
+              <div
+                key={t.id}
+                className="relative flex items-center justify-between overflow-hidden rounded-[var(--radius-control)] p-3 text-white"
+                style={{
+                  background: t.color,
+                  backgroundImage:
+                    "repeating-linear-gradient(135deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 2px, transparent 2px, transparent 9px)",
+                }}
+              >
                 <div>
-                  <div className="font-bold">{t.name}</div>
-                  <div className="text-xs opacity-80">
+                  <div className="font-display font-bold">{t.name}</div>
+                  <div className="text-xs font-medium opacity-80">
                     {players.filter((p) => p.team_id === t.id).map((p) => p.nickname).join(" · ") || "No students yet"}
                   </div>
                 </div>

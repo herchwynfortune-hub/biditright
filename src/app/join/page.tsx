@@ -43,7 +43,7 @@ export default function JoinPage() {
       <div className="card w-full max-w-sm p-8">
         <div className="mb-8 flex items-center gap-2">
           <span className="h-7 w-7 rounded-full bg-gold border-2 border-ink" />
-          <span className="text-lg font-bold">bid it right</span>
+          <span className="font-display text-lg font-bold">bid it right</span>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
